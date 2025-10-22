@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS jenis_pembayaran (
   id TEXT PRIMARY KEY,
   nama_pembayaran TEXT NOT NULL,
   nominal INTEGER NOT NULL,
-  berlaku_untuk TEXT NOT NULL, -- JSON array of class IDs
-  jenjang TEXT NOT NULL CHECK(jenjang IN ('MTs', 'MA')),
+  berlaku_untuk TEXT NOT NULL, -- JSON array: ["*"] = all, ["MTs:*"] = all MTs, ["MA:*"] = all MA, or ["k1","k2"] = specific class IDs
+  jenjang TEXT NOT NULL CHECK(jenjang IN ('MTs', 'MA')), -- Default jenjang (for backward compat, use 'MTs' for universal)
   tipe_pembayaran TEXT NOT NULL CHECK(tipe_pembayaran IN ('Berulang', 'Sekali Bayar (Tunai)', 'Sekali Bayar (Bisa Dicicil)')),
   dibuat_oleh TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP

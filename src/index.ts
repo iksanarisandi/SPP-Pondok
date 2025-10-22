@@ -654,9 +654,18 @@ app.get('/', (c) => {
               </select>
             </div>
           </div>
-          <div class="flex justify-end gap-2 pt-4 border-t">
-            <button type="button" @click="siswaModal = false" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Batal</button>
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Simpan</button>
+          <div class="flex justify-between items-center pt-4 border-t">
+            <!-- Tombol Kelola Beasiswa (hanya tampil saat Edit) -->
+            <button type="button" x-show="siswaForm.id" @click="openBeasiswaModal(siswaForm.id)" 
+                    class="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 font-medium">
+              🎓 Kelola Beasiswa
+            </button>
+            <div x-show="!siswaForm.id" class="flex-1"></div>
+            
+            <div class="flex gap-2">
+              <button type="button" @click="siswaModal = false" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Batal</button>
+              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Simpan</button>
+            </div>
           </div>
         </form>
       </div>
@@ -694,17 +703,84 @@ app.get('/', (c) => {
           </div>
           <div>
             <label class="block text-sm font-medium mb-2">Berlaku untuk Kelas:</label>
-            <div class="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto border rounded-lg p-3">
-              <template x-for="k in kelasList.filter(x => x.jenjang === pembayaranForm.jenjang)" :key="k.id">
-                <label class="flex items-center gap-2">
-                  <input type="checkbox" :value="k.id" 
-                    :checked="pembayaranForm.berlaku_untuk.includes(k.id)"
-                    @change="toggleKelasSelection(k.id)"
-                    class="rounded">
-                  <span class="text-sm" x-text="k.nama_kelas"></span>
+            <div class="space-y-3 max-h-64 overflow-y-auto border rounded-lg p-4 bg-gray-50">
+              
+              <!-- Level 1: Semua Kelas -->
+              <div class="pb-2 border-b border-gray-200">
+                <label class="flex items-center gap-2 font-medium text-primary-dark">
+                  <input type="checkbox" value="*" 
+                    :checked="pembayaranForm.berlaku_untuk.includes('*')"
+                    @change="toggleKelasSelection('*')"
+                    class="w-5 h-5 rounded text-primary">
+                  <span>✓ Semua Kelas (MTs & MA)</span>
                 </label>
-              </template>
+              </div>
+              
+              <!-- Level 2: Per Jenjang -->
+              <div class="pb-2 border-b border-gray-200">
+                <p class="text-xs font-semibold text-gray-600 mb-2">PILIH PER JENJANG:</p>
+                <div class="space-y-1">
+                  <label class="flex items-center gap-2">
+                    <input type="checkbox" value="MTs:*" 
+                      :checked="pembayaranForm.berlaku_untuk.includes('MTs:*')"
+                      @change="toggleKelasSelection('MTs:*')"
+                      :disabled="pembayaranForm.berlaku_untuk.includes('*')"
+                      class="w-4 h-4 rounded text-blue-600">
+                    <span class="text-sm">Semua Kelas MTs</span>
+                  </label>
+                  <label class="flex items-center gap-2">
+                    <input type="checkbox" value="MA:*" 
+                      :checked="pembayaranForm.berlaku_untuk.includes('MA:*')"
+                      @change="toggleKelasSelection('MA:*')"
+                      :disabled="pembayaranForm.berlaku_untuk.includes('*')"
+                      class="w-4 h-4 rounded text-blue-600">
+                    <span class="text-sm">Semua Kelas MA</span>
+                  </label>
+                </div>
+              </div>
+              
+              <!-- Level 3: Per Kelas Individual -->
+              <div>
+                <p class="text-xs font-semibold text-gray-600 mb-2">PILIH KELAS SPESIFIK:</p>
+                
+                <!-- MTs Classes -->
+                <div class="mb-3">
+                  <p class="text-xs font-medium text-blue-700 mb-1">MTs:</p>
+                  <div class="grid grid-cols-3 gap-2">
+                    <template x-for="k in kelasList.filter(x => x.jenjang === 'MTs')" :key="k.id">
+                      <label class="flex items-center gap-1">
+                        <input type="checkbox" :value="k.id" 
+                          :checked="pembayaranForm.berlaku_untuk.includes(k.id)"
+                          @change="toggleKelasSelection(k.id)"
+                          :disabled="pembayaranForm.berlaku_untuk.includes('*') || pembayaranForm.berlaku_untuk.includes('MTs:*')"
+                          class="w-4 h-4 rounded text-green-600">
+                        <span class="text-xs" x-text="k.nama_kelas"></span>
+                      </label>
+                    </template>
+                  </div>
+                </div>
+                
+                <!-- MA Classes -->
+                <div>
+                  <p class="text-xs font-medium text-purple-700 mb-1">MA:</p>
+                  <div class="grid grid-cols-3 gap-2">
+                    <template x-for="k in kelasList.filter(x => x.jenjang === 'MA')" :key="k.id">
+                      <label class="flex items-center gap-1">
+                        <input type="checkbox" :value="k.id" 
+                          :checked="pembayaranForm.berlaku_untuk.includes(k.id)"
+                          @change="toggleKelasSelection(k.id)"
+                          :disabled="pembayaranForm.berlaku_untuk.includes('*') || pembayaranForm.berlaku_untuk.includes('MA:*')"
+                          class="w-4 h-4 rounded text-green-600">
+                        <span class="text-xs" x-text="k.nama_kelas"></span>
+                      </label>
+                    </template>
+                  </div>
+                </div>
+              </div>
             </div>
+            <p class="text-xs text-gray-500 mt-2">
+              💡 Tip: Pilih "Semua Kelas" untuk berlaku universal, atau pilih jenjang/kelas spesifik sesuai kebutuhan.
+            </p>
           </div>
           <div class="flex justify-end gap-2 pt-4 border-t">
             <button type="button" @click="pembayaranModal = false" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Batal</button>
@@ -962,6 +1038,41 @@ app.get('/', (c) => {
       </div>
     </div>
 
+    <!-- Modal Kelola Beasiswa -->
+    <div x-show="beasiswaModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="beasiswaModal = false">
+      <div class="bg-white rounded-xl p-6 w-full max-w-md m-4">
+        <h3 class="text-lg font-bold mb-4">🎓 Kelola Beasiswa</h3>
+        
+        <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p class="text-sm text-gray-700">Siswa: <strong x-text="currentBeasiswaSiswa?.nama_siswa" class="text-primary-dark"></strong></p>
+          <p class="text-xs text-gray-600 mt-1">Pilih jenis pembayaran yang akan dibebaskan (beasiswa)</p>
+        </div>
+
+        <div class="space-y-2 max-h-64 overflow-y-auto">
+          <template x-for="p in pembayaranList" :key="p.id">
+            <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+              <input type="checkbox" :value="p.id"
+                :checked="beasiswaSelection.includes(p.id)"
+                @change="toggleBeasiswaSelection(p.id)"
+                class="w-5 h-5 rounded text-primary">
+              <div class="flex-1">
+                <p class="font-medium text-sm" x-text="p.nama_pembayaran"></p>
+                <p class="text-xs text-gray-600">
+                  <span x-text="p.tipe_pembayaran"></span> • 
+                  <span x-text="'Rp ' + formatRupiah(p.nominal)"></span>
+                </p>
+              </div>
+            </label>
+          </template>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-4 mt-4 border-t">
+          <button type="button" @click="beasiswaModal = false" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Batal</button>
+          <button type="button" @click="saveBeasiswa" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark">Simpan Beasiswa</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -1009,6 +1120,7 @@ app.get('/', (c) => {
         bendaharaModal: false,
         paymentModal: false,
         buktiModal: false,
+        beasiswaModal: false,
         
         // Payment State
         paymentLoading: false,
@@ -1016,6 +1128,10 @@ app.get('/', (c) => {
         tagihanList: [],
         selectedTagihan: [],
         cicilanAmounts: {},
+        
+        // Beasiswa State
+        currentBeasiswaSiswa: null,
+        beasiswaSelection: [],
         lastTransaksi: [],
         
         // Forms
@@ -1188,9 +1304,12 @@ app.get('/', (c) => {
         
         async generateTagihan(siswa) {
           const tagihan = [];
-          const pembayaranBerlaku = this.pembayaranList.filter(p => 
-            p.berlaku_untuk.includes(siswa.kelas_id)
-          );
+          const pembayaranBerlaku = this.pembayaranList.filter(p => {
+            // Check if payment applies to this student's class
+            return p.berlaku_untuk.includes('*') ||  // Semua Kelas
+                   p.berlaku_untuk.includes(\`\${siswa.jenjang}:*\`) ||  // Semua kelas di jenjang ini
+                   p.berlaku_untuk.includes(siswa.kelas_id);  // Kelas spesifik
+          });
 
           const transaksi = await this.apiCall(\`/api/transaksi?siswa_id=\${siswa.id}\`);
           const today = new Date();
@@ -1544,10 +1663,32 @@ app.get('/', (c) => {
         
         toggleKelasSelection(kelasId) {
           const index = this.pembayaranForm.berlaku_untuk.indexOf(kelasId);
+          
           if (index > -1) {
+            // Uncheck: remove from array
             this.pembayaranForm.berlaku_untuk.splice(index, 1);
           } else {
-            this.pembayaranForm.berlaku_untuk.push(kelasId);
+            // Check: add with smart logic
+            if (kelasId === '*') {
+              // Selecting "Semua Kelas" - clear all others
+              this.pembayaranForm.berlaku_untuk = ['*'];
+            } else if (kelasId === 'MTs:*' || kelasId === 'MA:*') {
+              // Selecting jenjang wildcard - remove "*" if exists
+              const filtered = this.pembayaranForm.berlaku_untuk.filter(id => id !== '*');
+              
+              // Remove specific class IDs for this jenjang
+              const jenjang = kelasId.split(':')[0];
+              const specificIds = this.kelasList.filter(k => k.jenjang === jenjang).map(k => k.id);
+              const withoutSpecific = filtered.filter(id => !specificIds.includes(id));
+              
+              this.pembayaranForm.berlaku_untuk = [...withoutSpecific, kelasId];
+            } else {
+              // Selecting specific class - remove wildcards
+              const filtered = this.pembayaranForm.berlaku_untuk.filter(id => 
+                id !== '*' && id !== 'MTs:*' && id !== 'MA:*'
+              );
+              this.pembayaranForm.berlaku_untuk = [...filtered, kelasId];
+            }
           }
         },
         
@@ -1556,13 +1697,96 @@ app.get('/', (c) => {
             const method = this.pembayaranForm.id ? 'PUT' : 'POST';
             const endpoint = this.pembayaranForm.id ? \`/api/pembayaran/\${this.pembayaranForm.id}\` : '/api/pembayaran';
             
-            await this.apiCall(endpoint, method, this.pembayaranForm);
+            // Determine jenjang from berlaku_untuk selection
+            let finalJenjang = this.pembayaranForm.jenjang; // Use form selection as default
+            
+            if (this.pembayaranForm.berlaku_untuk.includes('*')) {
+              // Semua Kelas - use default MTs for backward compat
+              finalJenjang = 'MTs';
+            } else if (this.pembayaranForm.berlaku_untuk.includes('MTs:*')) {
+              finalJenjang = 'MTs';
+            } else if (this.pembayaranForm.berlaku_untuk.includes('MA:*')) {
+              finalJenjang = 'MA';
+            } else if (this.pembayaranForm.berlaku_untuk.length > 0) {
+              // Get jenjang from first selected class
+              const firstKelasId = this.pembayaranForm.berlaku_untuk.find(id => !id.includes(':'));
+              if (firstKelasId) {
+                const kelas = this.kelasList.find(k => k.id === firstKelasId);
+                if (kelas) finalJenjang = kelas.jenjang;
+              }
+            }
+            
+            const dataToSave = {
+              ...this.pembayaranForm,
+              jenjang: finalJenjang
+            };
+            
+            await this.apiCall(endpoint, method, dataToSave);
             
             this.showToast('Jenis pembayaran berhasil disimpan!', 'success');
             this.pembayaranModal = false;
             this.loadPembayaran();
           } catch (error) {
             this.showToast('Gagal menyimpan jenis pembayaran', 'error');
+          }
+        },
+        
+        // Beasiswa Management
+        openBeasiswaModal(siswaId) {
+          const siswa = this.siswaList.find(s => s.id === siswaId);
+          if (!siswa) return;
+          
+          this.currentBeasiswaSiswa = siswa;
+          
+          // Load existing beasiswa selection
+          if (siswa.beasiswa_potongan) {
+            try {
+              this.beasiswaSelection = JSON.parse(siswa.beasiswa_potongan);
+            } catch (e) {
+              this.beasiswaSelection = [];
+            }
+          } else {
+            this.beasiswaSelection = [];
+          }
+          
+          this.beasiswaModal = true;
+        },
+        
+        toggleBeasiswaSelection(pembayaranId) {
+          const index = this.beasiswaSelection.indexOf(pembayaranId);
+          if (index > -1) {
+            this.beasiswaSelection.splice(index, 1);
+          } else {
+            this.beasiswaSelection.push(pembayaranId);
+          }
+        },
+        
+        async saveBeasiswa() {
+          if (!this.currentBeasiswaSiswa) return;
+          
+          try {
+            const beasiswa_jenis = this.beasiswaSelection.length > 0 ? 'Beasiswa Prestasi' : null;
+            const beasiswa_potongan = this.beasiswaSelection.length > 0 ? JSON.stringify(this.beasiswaSelection) : null;
+            const beasiswa_tanggal = this.beasiswaSelection.length > 0 ? new Date().toISOString().split('T')[0] : null;
+            
+            await this.apiCall(\`/api/siswa/\${this.currentBeasiswaSiswa.id}\`, 'PUT', {
+              ...this.currentBeasiswaSiswa,
+              beasiswa_jenis,
+              beasiswa_potongan,
+              beasiswa_tanggal
+            });
+            
+            this.showToast('✅ Beasiswa berhasil dikelola!', 'success');
+            this.beasiswaModal = false;
+            this.loadSiswa(); // Reload data
+            
+            // If siswa form is open, update it
+            if (this.siswaForm.id === this.currentBeasiswaSiswa.id) {
+              const updatedSiswa = await this.apiCall(\`/api/siswa/\${this.currentBeasiswaSiswa.id}\`);
+              Object.assign(this.siswaForm, updatedSiswa);
+            }
+          } catch (error) {
+            this.showToast('Gagal menyimpan beasiswa', 'error');
           }
         },
         
