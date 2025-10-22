@@ -353,7 +353,7 @@ app.get('/', (c) => {
                     <tr>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Pembayaran</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nominal</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Jenjang</th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Berlaku Untuk</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipe</th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
                     </tr>
@@ -363,7 +363,7 @@ app.get('/', (c) => {
                       <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 text-sm font-medium" x-text="p.nama_pembayaran"></td>
                         <td class="px-6 py-4 text-sm font-semibold text-green-600">Rp <span x-text="formatRupiah(p.nominal)"></span></td>
-                        <td class="px-6 py-4 text-sm" x-text="p.jenjang"></td>
+                        <td class="px-6 py-4 text-sm" x-text="formatBerlakuUntuk(p.berlaku_untuk)"></td>
                         <td class="px-6 py-4">
                           <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800" x-text="p.tipe_pembayaran"></span>
                         </td>
@@ -685,14 +685,7 @@ app.get('/', (c) => {
               <label class="block text-sm font-medium mb-2">Nominal</label>
               <input type="number" x-model="pembayaranForm.nominal" class="w-full px-4 py-2 border rounded-lg" required>
             </div>
-            <div>
-              <label class="block text-sm font-medium mb-2">Jenjang</label>
-              <select x-model="pembayaranForm.jenjang" class="w-full px-4 py-2 border rounded-lg" required>
-                <option value="MTs">MTs</option>
-                <option value="MA">MA</option>
-              </select>
-            </div>
-            <div>
+            <div class="col-span-2">
               <label class="block text-sm font-medium mb-2">Tipe Pembayaran</label>
               <select x-model="pembayaranForm.tipe_pembayaran" class="w-full px-4 py-2 border rounded-lg" required>
                 <option value="Berulang">Berulang</option>
@@ -1068,7 +1061,7 @@ app.get('/', (c) => {
 
         <div class="flex justify-end gap-2 pt-4 mt-4 border-t">
           <button type="button" @click="beasiswaModal = false" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Batal</button>
-          <button type="button" @click="saveBeasiswa" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark">Simpan Beasiswa</button>
+          <button type="button" @click="saveBeasiswa" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Simpan Beasiswa</button>
         </div>
       </div>
     </div>
@@ -1545,6 +1538,45 @@ app.get('/', (c) => {
         
         formatRupiah(amount) {
           return new Intl.NumberFormat('id-ID').format(amount);
+        },
+        
+        formatBerlakuUntuk(berlakuUntuk) {
+          if (!berlakuUntuk || berlakuUntuk.length === 0) {
+            return 'Tidak ada';
+          }
+          
+          // Cek Semua Kelas
+          if (berlakuUntuk.includes('*')) {
+            return 'Semua Kelas';
+          }
+          
+          // Cek per jenjang
+          const hasMTs = berlakuUntuk.includes('MTs:*');
+          const hasMA = berlakuUntuk.includes('MA:*');
+          
+          if (hasMTs && hasMA) {
+            return 'Semua Kelas';
+          }
+          
+          if (hasMTs) {
+            return 'Semua Kelas MTs';
+          }
+          
+          if (hasMA) {
+            return 'Semua Kelas MA';
+          }
+          
+          // Cek kelas spesifik
+          const kelasIds = berlakuUntuk.filter(item => !item.includes(':') && item !== '*');
+          if (kelasIds.length > 0) {
+            const namaKelas = kelasIds.map(id => {
+              const kelas = this.kelasList.find(k => k.id === id);
+              return kelas ? kelas.nama_kelas : id;
+            });
+            return namaKelas.join(', ');
+          }
+          
+          return 'Tidak ada';
         },
         
         // Kelas CRUD
