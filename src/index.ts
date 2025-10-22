@@ -1383,13 +1383,30 @@ app.get('/', (c) => {
               foot: [['TOTAL', \`Rp \${this.formatRupiah(totalBayar)}\`]],
               theme: 'grid',
               headStyles: { fillColor: [22, 160, 133], textColor: [255, 255, 255], fontStyle: 'bold' },
-              footStyles: { fontStyle: 'bold', fontSize: 12, fillColor: [240, 240, 240] },
+              footStyles: { 
+                fontStyle: 'bold', 
+                fontSize: 12, 
+                fillColor: [52, 152, 219],  // Blue background for better contrast
+                textColor: [255, 255, 255],  // White text
+                lineWidth: 0.5,
+                lineColor: [52, 152, 219]
+              },
             });
-            doc.setFontSize(10);
+            
+            // Status box
+            const finalY = doc.autoTable.previous.finalY + 10;
+            doc.setFillColor(46, 204, 113);  // Green background
+            doc.rect(15, finalY, 180, 12, 'F');
+            doc.setFontSize(11);
             doc.setFont('helvetica', 'bold');
-            doc.text('Status: LUNAS ✓', 15, doc.autoTable.previous.finalY + 15);
+            doc.setTextColor(255, 255, 255);  // White text
+            doc.text('STATUS: LUNAS', doc.internal.pageSize.getWidth() / 2, finalY + 8, { align: 'center' });
+            
+            // Footer text
+            doc.setTextColor(0, 0, 0);  // Black text
             doc.setFont('helvetica', 'normal');
-            doc.text('Terima kasih atas pembayarannya.', 15, doc.autoTable.previous.finalY + 25);
+            doc.setFontSize(9);
+            doc.text('Terima kasih atas pembayarannya.', doc.internal.pageSize.getWidth() / 2, finalY + 20, { align: 'center' });
             doc.save(\`bukti_pembayaran_\${t.nama_siswa}_\${t.no_transaksi}.pdf\`);
             this.showToast('✅ PDF berhasil di-download!', 'success');
           } catch (error) {
