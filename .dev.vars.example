@@ -1,0 +1,5 @@
+# Example environment variables for local development
+# Copy this file to .dev.vars and fill in your values
+
+# Uncomment and add any additional environment variables here
+# API_KEY=your_api_key_here

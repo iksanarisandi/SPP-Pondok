@@ -1,0 +1,19 @@
+name = "spp-pondok-worker"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "spp-db"
+database_id = "10796e8c-858c-4249-900d-185e2516db4c"
+
+# R2 Storage untuk bukti transfer
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "spp-bukti-transfer"
+
+# Environment variables
+[vars]
+APP_NAME = "Sistem Pembayaran Pondok Pesantren Bali Bina Insani"
