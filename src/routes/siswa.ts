@@ -180,4 +180,39 @@ siswa.post('/import', async (c) => {
   }
 });
 
+// DELETE siswa with options
+siswa.delete('/:id', async (c) => {
+  try {
+    const user = c.get('user') as AuthUser;
+    
+    if (user.role !== 'bendahara') {
+      return c.json({ error: 'Hanya bendahara yang dapat menghapus siswa' }, 403);
+    }
+
+    const id = c.req.param('id');
+    const deleteType = c.req.query('type') || 'all';
+
+    const siswaData = await c.env.DB.prepare('SELECT * FROM siswa WHERE id = ?').bind(id).first();
+    if (!siswaData) {
+      return c.json({ error: 'Siswa tidak ditemukan' }, 404);
+    }
+
+    if (deleteType === 'all') {
+      await c.env.DB.prepare('DELETE FROM transaksi WHERE siswa_id = ?').bind(id).run();
+      await c.env.DB.prepare('DELETE FROM siswa WHERE id = ?').bind(id).run();
+      return c.json({ success: true, message: 'Siswa dan transaksi berhasil dihapus' });
+    } else if (deleteType === 'transaksi') {
+      const result = await c.env.DB.prepare('DELETE FROM transaksi WHERE siswa_id = ?').bind(id).run();
+      return c.json({ success: true, message: `${result.meta.changes} transaksi berhasil dihapus` });
+    } else if (deleteType === 'siswa') {
+      await c.env.DB.prepare('DELETE FROM siswa WHERE id = ?').bind(id).run();
+      return c.json({ success: true, message: 'Siswa berhasil dihapus, transaksi tetap tersimpan' });
+    } else {
+      return c.json({ error: 'Tipe hapus tidak valid' }, 400);
+    }
+  } catch (error) {
+    return c.json({ error: 'Gagal menghapus data siswa' }, 500);
+  }
+});
+
 export default siswa;

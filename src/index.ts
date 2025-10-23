@@ -322,9 +322,14 @@ app.get('/', (c) => {
                           </span>
                         </td>
                         <td class="px-6 py-4">
-                          <button @click="editSiswa(s)" class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
-                            ✏️ Edit
-                          </button>
+                          <div class="flex gap-2">
+                            <button @click="editSiswa(s)" class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
+                              ✏️ Edit
+                            </button>
+                            <button @click="openDeleteSiswaModal(s)" class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200">
+                              🗑️ Hapus
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     </template>
@@ -461,8 +466,8 @@ app.get('/', (c) => {
               <div class="bg-gradient-to-br from-purple-500 to-indigo-600 text-white p-6 rounded-xl shadow-lg">
                 <div class="flex items-center justify-between">
                   <div>
-                    <p class="text-sm opacity-90">Total Pemasukan</p>
-                    <p class="text-xl font-bold mt-2">Rp <span x-text="formatRupiah(pimpinanMetrics.totalPemasukan || 0)"></span></p>
+                    <p class="text-sm opacity-90">Pendapatan Bulan Ini</p>
+                    <p class="text-xl font-bold mt-2">Rp <span x-text="formatRupiah(pimpinanMetrics.pendapatanBulanIni || 0)"></span></p>
                   </div>
                   <div class="text-4xl opacity-50">💰</div>
                 </div>
@@ -1066,6 +1071,54 @@ app.get('/', (c) => {
       </div>
     </div>
 
+    <!-- Modal Hapus Siswa -->
+    <div x-show="deleteSiswaModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="deleteSiswaModal = false">
+      <div class="bg-white rounded-xl p-6 w-full max-w-md m-4">
+        <h3 class="text-lg font-bold mb-4 text-red-600">🗑️ Hapus Data Siswa</h3>
+        
+        <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p class="text-sm text-gray-700">Siswa: <strong x-text="deleteSiswaData?.nama_siswa" class="text-red-700"></strong></p>
+          <p class="text-xs text-gray-600 mt-1">NIS: <span x-text="deleteSiswaData?.nis"></span></p>
+        </div>
+
+        <p class="text-sm text-gray-700 mb-4">Pilih tipe penghapusan:</p>
+
+        <div class="space-y-3 mb-6">
+          <label class="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50"
+            :class="deleteType === 'all' ? 'border-red-500 bg-red-50' : 'border-gray-200'">
+            <input type="radio" name="deleteType" value="all" x-model="deleteType" class="mt-1">
+            <div>
+              <p class="font-semibold text-sm text-red-700">Hapus Semua Data</p>
+              <p class="text-xs text-gray-600">Menghapus siswa beserta seluruh transaksi terkait</p>
+            </div>
+          </label>
+          
+          <label class="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50"
+            :class="deleteType === 'transaksi' ? 'border-orange-500 bg-orange-50' : 'border-gray-200'">
+            <input type="radio" name="deleteType" value="transaksi" x-model="deleteType" class="mt-1">
+            <div>
+              <p class="font-semibold text-sm text-orange-700">Hapus Transaksi Saja</p>
+              <p class="text-xs text-gray-600">Menghapus transaksi, siswa tetap tersimpan</p>
+            </div>
+          </label>
+          
+          <label class="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50"
+            :class="deleteType === 'siswa' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200'">
+            <input type="radio" name="deleteType" value="siswa" x-model="deleteType" class="mt-1">
+            <div>
+              <p class="font-semibold text-sm text-yellow-700">Hapus Siswa Saja</p>
+              <p class="text-xs text-gray-600">Menghapus siswa, transaksi tetap tersimpan untuk histori</p>
+            </div>
+          </label>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-4 border-t">
+          <button type="button" @click="deleteSiswaModal = false" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Batal</button>
+          <button type="button" @click="confirmDeleteSiswa" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Hapus</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -1094,7 +1147,7 @@ app.get('/', (c) => {
           pendapatanBulanIni: 0
         },
         pimpinanMetrics: {
-          totalPemasukan: 0,
+          pendapatanBulanIni: 0,
           siswaAktif: 0,
           beasiswa: 0,
           totalTransaksi: 0
@@ -1114,6 +1167,7 @@ app.get('/', (c) => {
         paymentModal: false,
         buktiModal: false,
         beasiswaModal: false,
+        deleteSiswaModal: false,
         
         // Payment State
         paymentLoading: false,
@@ -1126,6 +1180,13 @@ app.get('/', (c) => {
         currentBeasiswaSiswa: null,
         beasiswaSelection: [],
         lastTransaksi: [],
+        
+        // Delete Siswa State
+        deleteSiswaData: null,
+        deleteType: 'all',
+        
+        // Chart State
+        chartRetryCount: 0,
         
         // Forms
         kelasForm: { id: null, jenjang: 'MTs', nama_kelas: '' },
@@ -1227,9 +1288,11 @@ app.get('/', (c) => {
             ]);
             
             const stats = await this.apiCall('/api/transaksi/stats/dashboard');
+            const allSiswa = await this.apiCall('/api/siswa');
+            
             this.metrics.transaksiBulanIni = stats.bulan_ini?.jumlah_transaksi || 0;
             this.metrics.pendapatanBulanIni = stats.bulan_ini?.total_pendapatan || 0;
-            this.metrics.siswaAktif = this.siswaList.filter(s => s.status === 'Aktif').length;
+            this.metrics.siswaAktif = allSiswa.filter(s => s.status === 'Aktif').length;
             
             this.searchSiswa();
           } catch (error) {
@@ -1676,6 +1739,26 @@ app.get('/', (c) => {
           }
         },
         
+        openDeleteSiswaModal(siswa) {
+          this.deleteSiswaData = siswa;
+          this.deleteType = 'all';
+          this.deleteSiswaModal = true;
+        },
+        
+        async confirmDeleteSiswa() {
+          try {
+            const url = '/api/siswa/' + this.deleteSiswaData.id + '?type=' + this.deleteType;
+            const result = await this.apiCall(url, 'DELETE');
+            
+            this.showToast(result.message || 'Berhasil menghapus data!', 'success');
+            this.deleteSiswaModal = false;
+            this.loadSiswa();
+            this.loadDashboardData();
+          } catch (error) {
+            this.showToast(error.error || 'Gagal menghapus data siswa', 'error');
+          }
+        },
+        
         // Pembayaran CRUD
         openPembayaranModal(pembayaran = null) {
           if (pembayaran) {
@@ -1897,63 +1980,106 @@ app.get('/', (c) => {
             
             const stats = await this.apiCall('/api/transaksi/stats/dashboard');
             const monthly = await this.apiCall('/api/transaksi/stats/monthly?limit=6');
+            const allSiswa = await this.apiCall('/api/siswa');
             
-            this.pimpinanMetrics.totalPemasukan = stats.total_keseluruhan || 0;
-            this.pimpinanMetrics.siswaAktif = this.siswaList.filter(s => s.status === 'Aktif').length;
-            this.pimpinanMetrics.beasiswa = this.siswaList.filter(s => s.beasiswa_jenis).length;
+            this.pimpinanMetrics.pendapatanBulanIni = stats.bulan_ini?.total_pendapatan || 0;
+            this.pimpinanMetrics.siswaAktif = allSiswa.filter(s => s.status === 'Aktif').length;
+            this.pimpinanMetrics.beasiswa = allSiswa.filter(s => s.beasiswa_jenis).length;
             this.pimpinanMetrics.totalTransaksi = stats.bulan_ini?.jumlah_transaksi || 0;
             
-            this.$nextTick(() => {
+            setTimeout(() => {
               this.renderChart(monthly.reverse());
-            });
+            }, 300);
           } catch (error) {
             console.error('Error loading ringkasan:', error);
           }
         },
         
-        renderChart(monthlyData) {
-          const canvas = document.getElementById('monthlyChart');
-          if (!canvas) return;
-          
-          const ctx = canvas.getContext('2d');
-          
-          if (this.monthlyChart) {
-            this.monthlyChart.destroy();
-          }
-          
-          this.monthlyChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: monthlyData.map(d => d.month),
-              datasets: [{
-                label: 'Pendapatan (Rp)',
-                data: monthlyData.map(d => d.total),
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                tension: 0.3,
-                fill: true
-              }]
-            },
-            options: {
-              responsive: true,
-              plugins: {
-                legend: { display: true },
-                tooltip: {
-                  callbacks: {
-                    label: (context) => 'Rp ' + this.formatRupiah(context.parsed.y)
-                  }
-                }
+        renderChart(monthlyData, retryCount = 0) {
+          try {
+            if (typeof Chart === 'undefined') {
+              if (retryCount < 5) {
+                console.warn('Chart.js belum ter-load, retry ke-' + (retryCount + 1));
+                setTimeout(() => this.renderChart(monthlyData, retryCount + 1), 1000);
+                return;
+              } else {
+                console.error('Chart.js gagal di-load setelah 5x retry');
+                return;
+              }
+            }
+            
+            const canvas = document.getElementById('monthlyChart');
+            if (!canvas) {
+              if (retryCount < 3) {
+                console.warn('Canvas monthlyChart belum ada, retry ke-' + (retryCount + 1));
+                setTimeout(() => this.renderChart(monthlyData, retryCount + 1), 500);
+                return;
+              } else {
+                console.error('Canvas monthlyChart tidak ditemukan setelah 3x retry');
+                return;
+              }
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            if (this.monthlyChart) {
+              try {
+                this.monthlyChart.destroy();
+              } catch (e) {
+                console.warn('Error destroying old chart:', e);
+              }
+            }
+            
+            if (!monthlyData || monthlyData.length === 0) {
+              console.warn('Data monthly kosong, tidak ada yang di-render');
+              return;
+            }
+            
+            console.log('Rendering chart dengan data:', monthlyData);
+            
+            this.monthlyChart = new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: monthlyData.map(d => d.month || ''),
+                datasets: [{
+                  label: 'Pendapatan (Rp)',
+                  data: monthlyData.map(d => d.total || 0),
+                  borderColor: 'rgb(59, 130, 246)',
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  tension: 0.3,
+                  fill: true
+                }]
               },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: {
-                    callback: (value) => 'Rp' + (value/1000000).toFixed(1) + 'Jt'
+              options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                  legend: { display: true },
+                  tooltip: {
+                    callbacks: {
+                      label: (context) => 'Rp ' + this.formatRupiah(context.parsed.y)
+                    }
+                  }
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      callback: (value) => 'Rp ' + (value/1000000).toFixed(1) + 'Jt'
+                    }
                   }
                 }
               }
+            });
+            
+            console.log('✅ Chart berhasil di-render dengan', monthlyData.length, 'data point');
+          } catch (error) {
+            console.error('❌ Error rendering chart:', error);
+            if (retryCount < 2) {
+              console.warn('Retry render chart karena error...');
+              setTimeout(() => this.renderChart(monthlyData, retryCount + 1), 1000);
             }
-          });
+          }
         },
         
         async loadBendahara() {
